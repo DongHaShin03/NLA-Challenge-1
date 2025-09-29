@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
     
     FILE* out_w = fopen("w.mtx", "w"); 
     fprintf(out_w,"%%%%MatrixMarket vector coordinate real general\n");
-    fprintf(out_w,"%d\n", A2.rows());
+    fprintf(out_w,"%ld\n", A2.rows());
     for(int i = 0; i < A2.rows(); i++) 
         fprintf(out_w, "%d %f\n", i, w(i));
     
@@ -250,8 +250,29 @@ int main(int argc, char* argv[]) {
     I.setIdentity(); 
     SparseMatrix<double> A4(A3.rows(), A3.rows());
     A4 = A3 + 3.0 * I; 
-    std::string a4out("./A4.mtx"); 
-    Eigen::saveMarket(A4, a4out); 
+    VectorXd y(A3.rows()); 
+    BiCGSTAB<SparseMatrix<double>> solver; 
+    solver.setTolerance(1e-8); 
+    solver.compute(A4); 
+    y = solver.solve(w); 
+    std::cout << "#iterations:     " << solver.iterations() << std::endl;
+    std::cout << "estimated error: " << solver.error() << std::endl; // è il residuo relativo normalizzato
+
+    Matrix<double, Dynamic, Dynamic, RowMajor> last =
+    Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(y.data(), height, width);
+
+    
+    Matrix<unsigned char, Dynamic, Dynamic, RowMajor> last_img(height, width);
+    last_img = last.unaryExpr([](double val) {
+        val = std::clamp(val, 0.0, 1.0);
+        return static_cast<unsigned char>(std::round(val * 255.0));
+    });
+
+    if (stbi_write_png("last.png", width, height, 1, last_img.data(), width) == 0) {
+        std::cerr << "Errore: impossibile salvare last.png\n";
+        stbi_image_free(image_data);
+        return 1;
+    }
     
 
     return 0;
