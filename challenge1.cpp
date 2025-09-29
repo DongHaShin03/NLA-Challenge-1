@@ -15,6 +15,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+using namespace std; 
 using namespace Eigen;
 
 SparseMatrix<double> ConvolutionalMatrix(const MatrixXd& H, int dimM, int dimN);
@@ -142,8 +143,9 @@ int main(int argc, char* argv[]) {
     Eigen::saveMarket(A2, matrixFileOut);
     
     FILE* out_w = fopen("w.mtx", "w"); 
-    fprintf(out_w, "w: \n"); 
-    for(int i = 0; i < A2.rows(); i++) 
+    fprintf(out_w,"%%%%MatrixMarket vector coordinate real general\n");
+    fprintf(out_w, "%d\n", w.size()); 
+    for(int i = 0; i < w.size(); i++) 
         fprintf(out_w, "%d %f\n", i, w(i));
     
     fclose(out_w);
