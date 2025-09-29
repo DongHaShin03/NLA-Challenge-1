@@ -138,13 +138,15 @@ int main(int argc, char* argv[]) {
     }
 
     //Task 8
-    if (!Eigen::saveMarket(A2, "A2.mtx")) {
-        std::cerr << "Errore: impossibile salvare A2.mtx\n";
-    }   
-    if (!Eigen::saveMarket(w, "w.mtx")) {
-        std::cerr << "Errore: impossibile salvare w.mtx\n";
-    }
-
+    std::string matrixFileOut("./A2.mtx");
+    Eigen::saveMarket(A2, matrixFileOut);
+    
+    FILE* out_w = fopen("w.mtx", "w"); 
+    fprintf(out_w, "w: \n"); 
+    for(int i = 0; i < A2.rows(); i++) 
+        fprintf(out_w, "%d %f\n", i, w(i));
+    
+    fclose(out_w);
 
 
     return 0;
