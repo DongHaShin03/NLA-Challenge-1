@@ -6,6 +6,9 @@
 #include <vector>
 #include <cmath>       
 #include <string>
+#include <unsupported/Eigen/SparseExtra>
+
+
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -133,6 +136,16 @@ int main(int argc, char* argv[]) {
         stbi_image_free(image_data);
         return 1;
     }
+
+    //Task 8
+    if (!Eigen::saveMarket(A2, "A2.mtx")) {
+        std::cerr << "Errore: impossibile salvare A2.mtx\n";
+    }   
+    if (!Eigen::saveMarket(w, "w.mtx")) {
+        std::cerr << "Errore: impossibile salvare w.mtx\n";
+    }
+
+
 
     return 0;
 }
