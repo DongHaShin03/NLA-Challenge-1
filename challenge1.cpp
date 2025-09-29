@@ -7,7 +7,8 @@
 #include <cmath>       
 #include <string>
 #include <unsupported/Eigen/SparseExtra>
-
+#include <fstream>
+#include <sstream>
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -15,7 +16,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-using namespace std; 
 using namespace Eigen;
 
 SparseMatrix<double> ConvolutionalMatrix(const MatrixXd& H, int dimM, int dimN);
@@ -143,12 +143,109 @@ int main(int argc, char* argv[]) {
     Eigen::saveMarket(A2, matrixFileOut);
     
     FILE* out_w = fopen("w.mtx", "w"); 
-    fprintf(out_w,"%%%%MatrixMarket vector coordinate real general\n");
-    fprintf(out_w, "%d\n", w.size()); 
-    for(int i = 0; i < w.size(); i++) 
+    fprintf(out_w, "w: \n"); 
+    for(int i = 0; i < A2.rows(); i++) 
         fprintf(out_w, "%d %f\n", i, w(i));
     
     fclose(out_w);
+
+
+    //Task 9
+
+    std::ifstream fin("sol.txt");
+    if (!fin) {
+        std::cerr << "Errore: impossibile aprire sol.txt\n";
+        stbi_image_free(image_data);
+        return 1;
+    }
+
+    std::string line;
+
+    // 1) Salta header MatrixMarket
+    do {
+        if (!std::getline(fin, line)) {
+            std::cerr << "Errore: sol.txt vuoto\n";
+            stbi_image_free(image_data);
+            return 1;
+        }
+    } while (!line.empty() && line[0] == '%');
+
+    // 2) La riga successiva è la dimensione
+    int N = 0;
+    {
+        std::istringstream iss(line);
+        iss >> N;
+    }
+    if (N != height * width) {
+        std::cerr << "Dimensione sol.txt (" << N
+                  << ") diversa da height*width=" << (height*width) << "\n";
+        stbi_image_free(image_data);
+        return 1;
+    }
+
+    // 3) Leggi N righe: indice + valore
+    std::vector<double> sol_vals;
+    sol_vals.reserve(N);
+    int idx;
+    double val;
+    for (int k = 0; k < N; ++k) {
+        fin >> idx >> val;
+        sol_vals.push_back(val);
+    }
+    fin.close();
+
+    // 4) Map a Eigen: vettore → matrice RowMajor height x width
+    VectorXd sol_v = Map<VectorXd>(sol_vals.data(), N);
+    Matrix<double, Dynamic, Dynamic, RowMajor> solD =
+        Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(sol_v.data(), height, width);
+
+    // 5) Clamping [0,1] + conversione a uint8
+    Matrix<unsigned char, Dynamic, Dynamic, RowMajor> sol_u8(height, width);
+    sol_u8 = solD.unaryExpr([](double val) {
+        val = std::clamp(val, 0.0, 1.0);
+        return static_cast<unsigned char>(std::round(val * 255.0));
+    });
+
+    // 6) Salva immagine JPG B&W
+    if (stbi_write_jpg("sol.jpg", width, height, 1, sol_u8.data(), 95) == 0) {
+        std::cerr << "Errore: impossibile salvare sol.jpg\n";
+        stbi_image_free(image_data);
+        return 1;
+    }
+
+
+    //Task 10
+    
+    MatrixXd Hed2(3,3);            
+    Hed2 << -1, -2, -1,
+            0, 0, 0,
+            1, 2, 1;
+    SparseMatrix<double> A3 = ConvolutionalMatrix(Hed2,height,width);
+    std::cout << "A3: " << A3.rows() << "x" << A3.cols()
+              << ", nnz = " << A3.nonZeros() << ", simmetrica = " << std::boolalpha << isSymmetric(A3) << std::endl;
+
+    //Task 11
+
+    VectorXd y3 = A3 * v;
+    Matrix<double, Dynamic, Dynamic, RowMajor> filteredD_3 =
+        Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(y3.data(), height, width);
+
+    
+    Matrix<unsigned char, Dynamic, Dynamic, RowMajor> filtered_u8_3(height, width);
+    filtered_u8_3 = filteredD_3.unaryExpr([](double val) {
+        val = std::clamp(val, 0.0, 1.0);
+        return static_cast<unsigned char>(std::round(val * 255.0));
+    });
+
+    if (stbi_write_png("filtered3.png", width, height, 1, filtered_u8_3.data(), width) == 0) {
+        std::cerr << "Errore: impossibile salvare filtered_2.png\n";
+        stbi_image_free(image_data);
+        return 1;
+    }
+
+    // Task 12
+
+    MatrixXd A4 = A3 + 3.0 * MatrixXd::Identity(A.rows(), A.cols());
 
 
     return 0;
