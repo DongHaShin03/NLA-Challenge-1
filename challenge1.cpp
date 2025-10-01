@@ -22,6 +22,7 @@ using namespace Eigen;
 SparseMatrix<double> ConvolutionalMatrix(const MatrixXd& H, int dimM, int dimN);
 bool isSymmetric(const SparseMatrix<double>& M);
 
+
 int main(int argc, char* argv[]) {
 
     // Task 1
@@ -76,8 +77,9 @@ int main(int argc, char* argv[]) {
     // Task 3
     VectorXd v = Map<VectorXd>(originalImg.data(), originalImg.size()); 
     VectorXd w = Map<VectorXd>(noiseImg.data(),    noiseImg.size()); 
-    std::cout << "Dim di v: " << v.size() << "\nDim di w: " << w.size() << std::endl;
-    std::cout << "Norma di v: " << v.norm() << std::endl;
+
+    std::cout << "Dim di v: " << v.size() << (v.size() == originalImg.rows() * originalImg.cols() ? " true" : " false")  << "\nDim di w: " << w.size() << (w.size() == noiseImg.rows() * noiseImg.cols() ? " true" : " false")  << std::endl;
+    std::cout << "Norma di v: " << v.norm() * 255.0 << std::endl;
 
     // Task 4
     MatrixXd Hav1(3, 3);
@@ -104,8 +106,8 @@ int main(int argc, char* argv[]) {
         return static_cast<unsigned char>(std::round(val * 255.0));
     });
 
-    if (stbi_write_png("filtered.png", width, height, 1, filtered_u8.data(), width) == 0) {
-        std::cerr << "Errore: impossibile salvare filtered.png\n";
+    if (stbi_write_png("Task5.png", width, height, 1, filtered_u8.data(), width) == 0) {
+        std::cerr << "Errore: impossibile salvare Task5.png\n";
         stbi_image_free(image_data);
         return 1;
     }
@@ -133,8 +135,8 @@ int main(int argc, char* argv[]) {
         return static_cast<unsigned char>(std::round(val * 255.0));
     });
 
-    if (stbi_write_png("filtered2.png", width, height, 1, filtered_u8_2.data(), width) == 0) {
-        std::cerr << "Errore: impossibile salvare filtered_2.png\n";
+    if (stbi_write_png("Task7.png", width, height, 1, filtered_u8_2.data(), width) == 0) {
+        std::cerr << "Errore: impossibile salvare Task7.png\n";
         stbi_image_free(image_data);
         return 1;
     }
@@ -163,7 +165,6 @@ int main(int argc, char* argv[]) {
 
     std::string line;
 
-    // 1) Salta header MatrixMarket
     do {
         if (!std::getline(fin, line)) {
             std::cerr << "Errore: sol.txt vuoto\n";
@@ -172,7 +173,6 @@ int main(int argc, char* argv[]) {
         }
     } while (!line.empty() && line[0] == '%');
 
-    // 2) La riga successiva è la dimensione
     int N = 0;
     {
         std::istringstream iss(line);
@@ -185,7 +185,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // 3) Leggi N righe: indice + valore
     std::vector<double> sol_vals;
     sol_vals.reserve(N);
     int idx;
@@ -196,21 +195,18 @@ int main(int argc, char* argv[]) {
     }
     fin.close();
 
-    // 4) Map a Eigen: vettore → matrice RowMajor height x width
     VectorXd sol_v = Map<VectorXd>(sol_vals.data(), N);
     Matrix<double, Dynamic, Dynamic, RowMajor> solD =
         Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(sol_v.data(), height, width);
 
-    // 5) Clamping [0,1] + conversione a uint8
     Matrix<unsigned char, Dynamic, Dynamic, RowMajor> sol_u8(height, width);
     sol_u8 = solD.unaryExpr([](double val) {
         val = std::clamp(val, 0.0, 1.0);
         return static_cast<unsigned char>(std::round(val * 255.0));
     });
 
-    // 6) Salva immagine JPG B&W
-    if (stbi_write_jpg("sol.jpg", width, height, 1, sol_u8.data(), 95) == 0) {
-        std::cerr << "Errore: impossibile salvare sol.jpg\n";
+    if (stbi_write_jpg("LISol.jpg", width, height, 1, sol_u8.data(), 95) == 0) {
+        std::cerr << "Errore: impossibile salvare LISol.jpg\n";
         stbi_image_free(image_data);
         return 1;
     }
@@ -239,8 +235,8 @@ int main(int argc, char* argv[]) {
         return static_cast<unsigned char>(std::round(val * 255.0));
     });
 
-    if (stbi_write_png("filtered3.png", width, height, 1, filtered_u8_3.data(), width) == 0) {
-        std::cerr << "Errore: impossibile salvare filtered_2.png\n";
+    if (stbi_write_png("Task11.png", width, height, 1, filtered_u8_3.data(), width) == 0) {
+        std::cerr << "Errore: impossibile salvare Task11.png\n";
         stbi_image_free(image_data);
         return 1;
     }
@@ -249,8 +245,10 @@ int main(int argc, char* argv[]) {
     SparseMatrix<double> I(A3.rows(), A3.rows()); 
     I.setIdentity(); 
     SparseMatrix<double> A4(A3.rows(), A3.rows());
+
     A4 = A3 + 3.0 * I; 
-    VectorXd y(A3.rows()); 
+    VectorXd y(A3.rows());
+
     BiCGSTAB<SparseMatrix<double>> solver; 
     solver.setTolerance(1e-8); 
     solver.compute(A4); 
@@ -268,8 +266,8 @@ int main(int argc, char* argv[]) {
         return static_cast<unsigned char>(std::round(val * 255.0));
     });
 
-    if (stbi_write_png("last.png", width, height, 1, last_img.data(), width) == 0) {
-        std::cerr << "Errore: impossibile salvare last.png\n";
+    if (stbi_write_png("Task12.png", width, height, 1, last_img.data(), width) == 0) {
+        std::cerr << "Errore: impossibile salvare Task12.png\n";
         stbi_image_free(image_data);
         return 1;
     }
@@ -293,8 +291,8 @@ SparseMatrix<double> ConvolutionalMatrix(const MatrixXd& H, int dimM, int dimN) 
         int i = z / dimN;
         int j = z % dimN;
 
-        for (int k = 0; k < kh; ++k) {
-            for (int l = 0; l < kw; ++l) {
+        for (int k = 0; k < kh; k++) {
+            for (int l = 0; l < kw; l++) {
                 int i_new = i + k - offi;
                 int j_new = j + l - offj;
 
