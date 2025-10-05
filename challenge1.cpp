@@ -9,12 +9,15 @@
 #include <unsupported/Eigen/SparseExtra>
 #include <fstream>
 #include <sstream>
-
+#include <Eigen/IterativeLinearSolvers>     
+#include <unsupported/Eigen/IterativeSolvers>
+#include <chrono>
+#include "stb_image_write.h"
+#include "stb_image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+
 
 using namespace std; 
 using namespace Eigen;
@@ -24,7 +27,9 @@ bool isSymmetric(const SparseMatrix<double>& M);
 
 
 int main(int argc, char* argv[]) {
-
+    
+    using Clock = std::chrono::steady_clock;
+    using ms    = std::chrono::duration<double, std::milli>;
     // Task 1
     if (argc < 2) {
         std::cerr << "Use: " << argv[0] << " <image_path>\n";
@@ -122,6 +127,11 @@ int main(int argc, char* argv[]) {
     std::cout << "A2: " << A2.rows() << "x" << A2.cols()
               << ", nnz = " << A2.nonZeros() << ", simmetrica = " << std::boolalpha << isSymmetric(A2) << std::endl;
 
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> chol;
+    chol.compute(A2);
+    bool isSPD = (chol.info() == Eigen::Success);
+    std::cout << std::boolalpha;                
+    std::cout << "isSPD = " << isSPD << "\n"; 
 
     //Task 7
     VectorXd y2 = A2 * v;
@@ -156,7 +166,7 @@ int main(int argc, char* argv[]) {
 
     //Task 9
 
-    std::ifstream fin("sol.txt");
+    std::ifstream fin("solILU.txt");
     if (!fin) {
         std::cerr << "Errore: impossibile aprire sol.txt\n";
         stbi_image_free(image_data);
@@ -250,11 +260,24 @@ int main(int argc, char* argv[]) {
     VectorXd y(A3.rows());
 
     BiCGSTAB<SparseMatrix<double>> solver; 
-    solver.setTolerance(1e-8); 
+    solver.setTolerance(1e-8);
+    solver.setMaxIterations(1000);
+    
+    auto t0 = Clock::now();
     solver.compute(A4); 
+    auto t1 = Clock::now();
     y = solver.solve(w); 
+    auto t2 = Clock::now();
+
+    double t_setup = ms(t1 - t0).count();
+    double t_solve = ms(t2 - t1).count();
+    double t_total = ms(t2 - t0).count();
+
     std::cout << "#iterations:     " << solver.iterations() << std::endl;
-    std::cout << "estimated error: " << solver.error() << std::endl; // è il residuo relativo normalizzato
+    std::cout << "estimated error: " << solver.error() << std::endl;
+    std::cout << "setup  = " << t_setup << " ms\n";
+    std::cout << "solve  = " << t_solve << " ms\n";
+    std::cout << "totale = " << t_total << " ms\n";
 
     Matrix<double, Dynamic, Dynamic, RowMajor> last =
     Map<Matrix<double, Dynamic, Dynamic, RowMajor>>(y.data(), height, width);
