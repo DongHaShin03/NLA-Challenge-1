@@ -1,35 +1,57 @@
 #include <iostream>
+#include <cmath>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/SparseExtra>
 #include <Eigen/Sparse>
 
-using namespace std; 
-using namespace Eigen; 
-using SpMat = Eigen::SparseMatrix<int>; 
-int main(){
-    // Task 1.a
-    int n1 = 9; 
-    SpMat Ag(n1, n1); 
-    Ag.coeffRef(0, 1) = 1; 
-    Ag.coeffRef(0, 3) = 1; 
-    Ag.coeffRef(1, 2) = 1; 
-    Ag.coeffRef(2, 3) = 1; 
-    Ag.coeffRef(2, 4) = 1; 
-    Ag.coeffRef(4, 5) = 1; 
-    Ag.coeffRef(4, 7) = 1; 
-    Ag.coeffRef(4, 8) = 1; 
-    Ag.coeffRef(5, 6) = 1; 
-    Ag.coeffRef(6, 7) = 1; 
-    Ag.coeffRef(6, 8) = 1; 
-    Ag.coeffRef(7, 8) = 1; 
+using namespace std;
+using namespace Eigen;
+using SpMat = SparseMatrix<double>;   // usa double ovunque
 
-    Ag = SpMat(Ag.transpose()) + Ag; 
-    saveMarket(Ag, "./Ag.mtx"); 
+int main() {
+    //Task 1
+    int n1 = 9;
+    SpMat Ag(n1, n1);
 
-    // Task 1.b
+    Ag.coeffRef(0,1) = 1.0;
+    Ag.coeffRef(0,3) = 1.0;
+    Ag.coeffRef(1,2) = 1.0;
+    Ag.coeffRef(2,3) = 1.0;
+    Ag.coeffRef(2,4) = 1.0;
+    Ag.coeffRef(4,5) = 1.0;
+    Ag.coeffRef(4,7) = 1.0;
+    Ag.coeffRef(4,8) = 1.0;
+    Ag.coeffRef(5,6) = 1.0;
+    Ag.coeffRef(6,7) = 1.0;
+    Ag.coeffRef(6,8) = 1.0;
+    Ag.coeffRef(7,8) = 1.0;
+
+    Ag = SpMat(Ag.transpose()) + Ag;
+    saveMarket(Ag, "./Ag.mtx");
+
     double frobNorm = std::sqrt(Ag.squaredNorm());
     std::cout << "Frobenius Norm: " << frobNorm << std::endl;
 
-    
+    //Task 2
+    VectorXd vg(n1);
+
+    vg = Ag * VectorXd::Ones(n1);
+    saveMarket(vg, "./vg.mtx");
+
+    SpMat Dg(n1, n1);
+    Dg.reserve(VectorXi::Ones(n1));
+    for (int i = 0; i < n1; ++i) Dg.insert(i,i) = vg(i);
+
+    SpMat Lg = Dg - Ag;
+    // Dg è una matrice diagonale a dominanza non stretta, il vettore y = 0 perchè ogni riga contiene nella posizione (i,i) la somma degli altri elementi della riga
+    // e gli altri elementi della riga sono invertiti di segno per l'equazione Lg = Dg - Ag
+
+    VectorXd x = VectorXd::Ones(n1);
+    VectorXd y = Lg * x;
+    cout << y.norm() << endl << Lg;
+    // Lg è simmetrica e SEMI-definita positiva perchè è un Laplaciano-like : è a dominanza diagonale non stretta per righe, i valori della diagonale sono tutti >0 e quelli non diagonali
+    // sono tutti < 0.
+    // La molteplicità dell’autovalore 0 è il numero di componenti connesse, in questo caso avendo tutto il grafo connesso, la molteplicità è 1 solo.
+
 
 }
