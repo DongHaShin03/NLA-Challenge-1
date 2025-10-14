@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/SparseExtra>
 #include <Eigen/Sparse>
+#include <Eigen/Eigenvalues> 
 
 using namespace std;
 using namespace Eigen;
@@ -48,10 +49,25 @@ int main() {
 
     VectorXd x = VectorXd::Ones(n1);
     VectorXd y = Lg * x;
-    cout << y.norm() << endl << Lg;
+    cout << y.norm() << endl;
     // Lg è simmetrica e SEMI-definita positiva perchè è un Laplaciano-like : è a dominanza diagonale non stretta per righe, i valori della diagonale sono tutti >0 e quelli non diagonali
     // sono tutti < 0.
     // La molteplicità dell’autovalore 0 è il numero di componenti connesse, in questo caso avendo tutto il grafo connesso, la molteplicità è 1 solo.
+
+    //Task 3
+    MatrixXd L = MatrixXd(Lg);
+
+    SelfAdjointEigenSolver<MatrixXd> saeigensolver(L);
+    if (saeigensolver.info() != Success) abort();
+
+    auto eigenvalues = saeigensolver.eigenvalues();
+    auto eigenvectors = saeigensolver.eigenvectors();
+    cout << "Min eigenvalue: " << eigenvalues.minCoeff() << endl << "Max Eigenvalue: " << eigenvalues.maxCoeff() << endl;
+
+    //Task 4
+    // in questo caso gli autovalori sono ordinati in ordine crescente e abbiamo preso l'autovettore dell'autovalore con il secondo valore minore, è coerente con la specifica
+    VectorXd fielder = eigenvectors.col(1);
+    cout << fielder << endl;
 
 
 }
