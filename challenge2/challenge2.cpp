@@ -27,13 +27,8 @@ int main(){
     saveMarket(Ag, "./Ag.mtx"); 
 
     // Task 1.b
-    SpMat tempA = SpMat(Ag.transpose()) * Ag; 
-    double trace; 
-    for(int i = 0; i < n1; i++)
-        trace += Ag.coeffRef(i, i); 
-    
-    double frobNorm = sqrt(trace); 
-    cout << "Frobenius Norm: " << frobNorm << endl; 
+    double frobNorm = std::sqrt(Ag.squaredNorm());
+    std::cout << "Frobenius Norm: " << frobNorm << std::endl;
 
     
 
