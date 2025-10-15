@@ -20,6 +20,17 @@ void printVec(int dim, vector<pair<int, double>> v){
     }
 }
 
+int countOutDiag(SpMat &m, int dim, int np, int nn){
+    int count = 0; 
+    for(int i = 0; i < np; i++){
+        for(int j = nn; j < np + nn; j++){
+            if(abs(m.coeffRef(i, j)) > 1e-15)   
+                count++; 
+        }
+    }
+    return count; 
+}
+
 void countAndSort(int &neg, int &pos, int dim, vector<pair<int, double>> &v){
     for(int i = 0; i < dim; i++){
         if(v[i].first != i+1 && v[i].second >= 0) 
@@ -164,17 +175,23 @@ int main(){
         eigV.emplace_back(position, val);
     }
 
-    int neg = 0, pos = 0; 
-    countAndSort(neg, pos, ns, eigV); 
-    cout << "np: " << pos << endl; 
-    cout << "nn: " << neg << endl; 
+    int nn = 0, np = 0; 
+    countAndSort(nn, np, ns, eigV); 
+    cout << "np: " << np << endl; 
+    cout << "nn: " << nn << endl; 
 
     SpMat P(ns, ns); 
     for(int i = 0; i < ns; i++) 
         P.coeffRef(i, eigV[i].first - 1) = 1; 
     saveMarket(P, "./permutation.mtx"); 
     
-
+    SpMat Aord = P * As * P.transpose(); 
+    saveMarket(Aord, "./Aord.mtx"); 
+    int count1 = countOutDiag(Aord, ns, np, nn); 
+    int count2 = countOutDiag(As, ns, np, nn); 
+    cout << "nnz in A_ord: " << count1 << endl; 
+    cout << "nnz in A_s: " << count2 << endl; 
+    
 
     return 0;
 }
