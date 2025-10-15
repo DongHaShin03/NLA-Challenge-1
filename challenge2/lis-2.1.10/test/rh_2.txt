@@ -1,0 +1,4 @@
+%%MatrixMarket vector coordinate real general
+2
+1   4.51283424035311222688e-12
+2   8.96572259684624129089e-11

@@ -14,6 +14,37 @@ using namespace std;
 using SpMat = SparseMatrix<double>;
 using SpVec = VectorXd;
 
+void printVec(int dim, vector<pair<int, double>> v){
+    for(int i = 0; i < dim; i++){
+        cout << "(" << v[i].first << ", " << v[i].second << ")" << endl; 
+    }
+}
+
+void countAndSort(int &neg, int &pos, int dim, vector<pair<int, double>> &v){
+    for(int i = 0; i < dim; i++){
+        if(v[i].first != i+1 && v[i].second >= 0) 
+            continue; 
+
+        if(v[i].second >= 0){
+            pos++; 
+            continue; 
+        }
+        else{
+            if(v[i].first == i+1)
+                neg++; 
+            for(int j = i; j < dim; j++){
+                if(v[j].second >= 0){
+                    pos++; 
+                    pair<int, double> tmp = v[i]; 
+                    v[i] = v[j]; 
+                    v[j] = tmp; 
+                    break; 
+                }
+            }
+        }
+
+    }
+}
 
 int main(){
     // Task 1
@@ -110,13 +141,39 @@ int main(){
     // Corrispettive EigenVector -> VecChallenge2.mtx
     // N iterations: 113 - 4
     // Prima abbiamo trovato il secondo autovalore più piccolo con etest5
-    // Comando: mpirun -n 4 ./etest5 Ls.mtx VecChallenge2.txt HisChallenge2.txt -emaxiter 10000 -etol 1e-10 -ss §
+    // Comando: mpirun -n 4 ./etest5 Ls.mtx VecChallenge2.txt HisChallenge2.txt -emaxiter 10000 -etol 1e-10 -ss 2
     // Dopo abbiamo calcolato con etest1 e con l'inverse method l'autovettore dell'autovalore corrispondente grazie allo shift
     // Comando: mpirun -n 4 ./etest1 Ls.mtx VecChallenge2.mtx HisChallenge2.txt -emaxiter 10000 -etol 1e-10 -e ii -shift 1.789070
 
     // Test 10
+    vector<pair<int, double>> eigV; 
+    eigV.reserve(ns); 
+    ifstream input("./lis-2.1.10/test/VecChallenge2.mtx");
+    if (!input) {
+        cerr << "Error opening files\n"; 
+        return 1; 
+    }
 
+    int position; 
+    double val; 
 
+    string dummy;
+    getline(input, dummy);  
+    getline(input, dummy);  
+    while (input >> position >> val) {
+        eigV.emplace_back(position, val);
+    }
+
+    int neg = 0, pos = 0; 
+    countAndSort(neg, pos, ns, eigV); 
+    cout << "np: " << pos << endl; 
+    cout << "nn: " << neg << endl; 
+
+    SpMat P(ns, ns); 
+    for(int i = 0; i < ns; i++) 
+        P.coeffRef(i, eigV[i].first - 1) = 1; 
+    saveMarket(P, "./permutation.mtx"); 
+    
 
 
     return 0;
