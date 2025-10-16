@@ -23,7 +23,7 @@ void printVec(int dim, vector<pair<int, double>> v){
 int countOutDiag(SpMat &m, int dim, int np, int nn){
     int count = 0; 
     for(int i = 0; i < np; i++){
-        for(int j = nn; j < np + nn; j++){
+        for(int j = np; j < np + nn; j++){
             if(abs(m.coeffRef(i, j)) > 1e-15)   
                 count++; 
         }
